@@ -4,6 +4,7 @@ library(scatterplot3d)
 
 OriginCodes = unique(ct$OriginCode)
 
+if (!dir.exists("validation")){dir.create("validation")}
 for (code in OriginCodes){
 ct_subset = subset(ct, OriginCode == code)
 #find GSE
@@ -23,12 +24,13 @@ rawValues$probe_id = rownames(rawValues)
 
 expressions = merge(rawValues, geneMappings, by.x="probe_id", by.y="probe")
 
-expressions = expressions[expressions$GeneID %in% hcc_meta$GeneID, colnames(expressions) %in% c("GeneID", ct_subset$GSM)]
+expressions = expressions[expressions$GeneID %in% dz_sig$GeneID, colnames(expressions) %in% c("GeneID", ct_subset$GSM)]
 
+if (nrow(expressions) < 3) {next}
 expressions_by_gene = aggregate(. ~ GeneID, data= expressions, mean)
 geneids = expressions_by_gene$GeneID
 expressions_by_gene = expressions_by_gene[, -1]
-genenames = merge(geneids, hcc_meta, by.x=1, by.y="GeneID", sort=F)$Symbol
+genenames = merge(geneids, dz_sig, by.x=1, by.y="GeneID", sort=F)$Symbol
 rownames(expressions_by_gene) = genenames
 
 annotation = subset(ct_subset, select= c("GSM", "ClassCode"))
@@ -37,7 +39,7 @@ annotation$ClassCode = as.factor(annotation$ClassCode)
 annotation = subset(annotation, select=c("ClassCode"))
 
 my.cols <- brewer.pal(9, "Blues")
-pheatmap(expressions_by_gene, col = my.cols, annotation = annotation,  cellheight= 12, show_colnames=F, legend=F, show_rownames=T , filename=paste("validation/heatmap_", code, ".pdf", sep="")) #
+pheatmap(expressions_by_gene, col = my.cols, annotation = annotation, cellwidth  = 6,  cellheight= 12, show_colnames=F, legend=F, show_rownames=T , filename=paste("validation/heatmap_", code, ".pdf", sep="")) #
 
 if (nrow(expressions_by_gene) < ncol(expressions_by_gene)){
   pca = princomp(t(expressions_by_gene))
